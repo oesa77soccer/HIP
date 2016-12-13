@@ -1,6 +1,7 @@
 import RPi.GPIO as GPIO, time
 import threading, sys
 
+Servo = 12
 PinR = 21
 PinG = 19
 PinB = 20
@@ -11,12 +12,22 @@ Blue = 22
 Motor1A = 23
 Motor1B = 24
 Motor1E = 25
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(26, GPIO.IN, GPIO.PUD_UP)
 button = 26
-
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(Servo,GPIO.OUT)
+GPIO.setup(button, GPIO.IN, GPIO.PUD_UP)
+GPIO.setup(Red,GPIO.OUT)
+GPIO.setup(Green,GPIO.OUT)
+GPIO.setup(Blue,GPIO.OUT)
+GPIO.setup(PinG, GPIO.IN)
+GPIO.setup(PinB, GPIO.IN)
+GPIO.setup(PinR, GPIO.IN)
+GPIO.setup(Motor1E,GPIO.OUT)
+GPIO.setup(Motor1A,GPIO.OUT)
+GPIO.setup(Motor1B,GPIO.OUT)
+pwm=GPIO.PWM(Servo,50)
+        
 def shutOff():  #shut off entire system
-        GPIO.setmode(GPIO.BCM)
         stopStationMotor()
         GPIO.output(Green, False)
         GPIO.output(Blue, False)
@@ -24,7 +35,6 @@ def shutOff():  #shut off entire system
 
 def measureFilltime():
         #discharge the capacitor
-        GPIO.setmode(GPIO.BCM)
         GPIO.setup(PinR, GPIO.OUT)
         GPIO.setup(PinB, GPIO.OUT)
         GPIO.setup(PinG, GPIO.OUT)
@@ -36,43 +46,36 @@ def measureFilltime():
         GPIO.setup(PinG, GPIO.IN)
         GPIO.setup(PinB, GPIO.IN)
         GPIO.setup(PinR, GPIO.IN)
-        GPIO.setup(Red,GPIO.OUT)
-        GPIO.setup(Green,GPIO.OUT)
-        GPIO.setup(Blue,GPIO.OUT)
+
         time.sleep(threshold)
         
 def brakeUp():
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setup(Green,GPIO.OUT)
+        pwm.start(5)
+        time.sleep(.13)
+        pwm.start(0)
         GPIO.output(Green, False)
         print "                                 Brake is in braking position."
 
 def brakeDown():
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setup(Green,GPIO.OUT)
+        pwm.start(11)
+        time.sleep(.15)
+        pwm.start(0)
         GPIO.output(Green, True)
         print "                                 Brake is in lowered position."
 
 def stopStationMotor():
         #station motor stops
-        GPIO.setup(Motor1E,GPIO.OUT)
         GPIO.output(Motor1E,GPIO.LOW)
 
         
 def stationMotorforward():
         #station motor moves forward
-        GPIO.setup(Motor1A,GPIO.OUT)
-        GPIO.setup(Motor1B,GPIO.OUT)
-        GPIO.setup(Motor1E,GPIO.OUT)
         GPIO.output(Motor1A,GPIO.LOW)
         GPIO.output(Motor1B,GPIO.HIGH)
         GPIO.output(Motor1E,GPIO.HIGH)
         
 def liftMotorforward():
         #lift motor moves forward
-        GPIO.setup(Motor1A,GPIO.OUT)
-        GPIO.setup(Motor1B,GPIO.OUT)
-        GPIO.setup(Motor1E,GPIO.OUT)
         GPIO.output(Motor1A,GPIO.HIGH)
         GPIO.output(Motor1B,GPIO.LOW)
         GPIO.output(Motor1E,GPIO.HIGH)
@@ -142,22 +145,19 @@ def stationChainExit():
                         if (GPIO.input(PinR) == True):
                                 GPIO.output(Red, True)
                         else:
-                            if (GPIO.input(PinR) == False):
-                                    GPIO.output(Red, False)
-                                    while (stationchange == stationinx):
-                                        measureFilltime()  
-                                        if (GPIO.input(PinR) == False):
-                                                GPIO.output(Red, False)
-                                        else:
-                                            if (GPIO.input(PinR) == True):
-                                                    GPIO.output(Red, True)
-                                                    stationcount = stationcount + 1
-                                                    break
-                    else:
-                                continue
-                else:
-                        stationchange = stationchange + 1
-                        print "bottom else"
+                            GPIO.output(Red, False)
+                            while (0 == stationinx):
+                                    measureFilltime()  
+                                    if (GPIO.input(PinR) == False):
+                                        GPIO.output(Red, False)
+                                    else:
+                                        GPIO.output(Red, True)
+                                        stationcount = stationcount + 1
+                                        break
+                #else:
+                        #stationchange = stationchange + 1
+                        #print "bottom else"
+
 def liftChainExit():
         #(same style of program as the station) Checks if the entire train has passed the certain point on the lift.
         liftchange = 0
@@ -188,8 +188,7 @@ def liftChainExit():
                                                     GPIO.output(Blue, False)
                                                     liftcount = liftcount + 1
                                                     break
-                    else:
-                             continue
+
                 else:
                         GPIO.output(Blue, False)
                         liftchange = liftchange + 1
@@ -279,10 +278,8 @@ while True:
    GPIO.setup(26, GPIO.IN, GPIO.PUD_UP)
    button_state = GPIO.input(button)
    if button_state == GPIO.LOW:
-        while True:   
-                rollercoasterProgram()
-                shutOff()
-                break
+        rollercoasterProgram()
+        shutOff()
    else:
       print " "
       time.sleep(1)
